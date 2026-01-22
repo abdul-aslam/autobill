@@ -127,6 +127,10 @@ try:
         product_categories_list = sorted([x for x in items_df['product_category'].unique().tolist() if pd.notna(x)])
         # Create dicts for quick lookup - ensure values are floats
         price_lookup = dict(zip(items_df['item_name'].dropna(), items_df['unit_price'].astype(float)))
+        
+        # Debug: Check if price_lookup is populated
+        if not price_lookup:
+            st.warning("⚠️ Price lookup is empty - items may not have prices")
         company_product_lookup = items_df.groupby('company')['product_category'].apply(lambda x: sorted([y for y in x.unique().tolist() if pd.notna(y)])).to_dict()
         company_category_items_lookup = items_df.groupby(['company', 'product_category'])['item_name'].apply(list).to_dict()
     else:
@@ -217,23 +221,19 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
             )
             st.session_state.line_items[idx]["description"] = selected_item
             
-            # Auto-fill unit price IMMEDIATELY if item is in lookup and not blank
-            if selected_item and selected_item.strip() in price_lookup:
-                price_value = price_lookup[selected_item.strip()]
-                item["unit_price"] = float(price_value) if pd.notna(price_value) else 0.0
-                st.session_state.line_items[idx]["unit_price"] = item["unit_price"]
-            elif selected_item:
-                # If not found with exact match, try case-insensitive search
-                found = False
-                for lookup_item, price in price_lookup.items():
-                    if lookup_item.strip().lower() == selected_item.strip().lower():
-                        item["unit_price"] = float(price) if pd.notna(price) else 0.0
-                        st.session_state.line_items[idx]["unit_price"] = item["unit_price"]
-                        found = True
-                        break
-                if not found:
-                    item["unit_price"] = 0.0
-                    st.session_state.line_items[idx]["unit_price"] = 0.0
+            # Auto-fill unit price by looking up in dataframe directly
+            if selected_item and selected_item.strip():
+                # Try exact match first
+                price_rows = items_df[items_df['item_name'] == selected_item.strip()]['unit_price']
+                if len(price_rows) > 0:
+                    price_value = float(price_rows.iloc[0])
+                    st.session_state.line_items[idx]["unit_price"] = price_value
+                else:
+                    # Try case-insensitive match
+                    price_rows = items_df[items_df['item_name'].str.lower() == selected_item.strip().lower()]['unit_price']
+                    if len(price_rows) > 0:
+                        price_value = float(price_rows.iloc[0])
+                        st.session_state.line_items[idx]["unit_price"] = price_value
         
         with col4:
             st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, key=f"qty_{idx}", label_visibility="collapsed")
