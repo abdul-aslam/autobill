@@ -120,8 +120,8 @@ try:
         items_list = items_df['item_name'].dropna().tolist()
         companies_list = sorted([x for x in items_df['company'].unique().tolist() if pd.notna(x)])
         product_categories_list = sorted([x for x in items_df['product_category'].unique().tolist() if pd.notna(x)])
-        # Create dicts for quick lookup
-        price_lookup = dict(zip(items_df['item_name'].dropna(), items_df['unit_price']))
+        # Create dicts for quick lookup - convert unit_price to float
+        price_lookup = dict(zip(items_df['item_name'].dropna(), pd.to_numeric(items_df['unit_price'], errors='coerce')))
         company_product_lookup = items_df.groupby('company')['product_category'].apply(lambda x: sorted([y for y in x.unique().tolist() if pd.notna(y)])).to_dict()
         company_category_items_lookup = items_df.groupby(['company', 'product_category'])['item_name'].apply(list).to_dict()
     else:
