@@ -3,3 +3,9 @@ Invoice ID,Client,Service,Amount
 12345,AQ4,test4,4.0
 1,Abdul Qadir Aslam,SaaS - Software as a Service,500.0
 1001010,Abdul Qadir Aslam,Marathon,55500.0
+AJUBA,AJUBA,Parcel Shipped,25.0
+As1234,Aspa,Shipping handling,46.0
+As1234,Aspa,Shipping handling,46.0
+As1235,Aspa,tax,265.0
+As1234,Aspa,tax packaging,44.0
+00001,Aspa,GST,46.2
