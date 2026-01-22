@@ -217,21 +217,28 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
             )
             st.session_state.line_items[idx]["description"] = selected_item
             
-            # Auto-fill unit price if item is in lookup and not blank
+            # Auto-fill unit price IMMEDIATELY if item is in lookup and not blank
             if selected_item and selected_item.strip() in price_lookup:
                 price_value = price_lookup[selected_item.strip()]
-                st.session_state.line_items[idx]["unit_price"] = float(price_value) if pd.notna(price_value) else 0.0
+                item["unit_price"] = float(price_value) if pd.notna(price_value) else 0.0
+                st.session_state.line_items[idx]["unit_price"] = item["unit_price"]
             elif selected_item:
                 # If not found with exact match, try case-insensitive search
+                found = False
                 for lookup_item, price in price_lookup.items():
                     if lookup_item.strip().lower() == selected_item.strip().lower():
-                        st.session_state.line_items[idx]["unit_price"] = float(price) if pd.notna(price) else 0.0
+                        item["unit_price"] = float(price) if pd.notna(price) else 0.0
+                        st.session_state.line_items[idx]["unit_price"] = item["unit_price"]
+                        found = True
                         break
+                if not found:
+                    item["unit_price"] = 0.0
+                    st.session_state.line_items[idx]["unit_price"] = 0.0
         
         with col4:
             st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, key=f"qty_{idx}", label_visibility="collapsed")
         with col5:
-            st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=item["unit_price"], min_value=0.0, key=f"price_{idx}", label_visibility="collapsed")
+            st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=float(st.session_state.line_items[idx].get("unit_price", 0.0)), min_value=0.0, key=f"price_{idx}", label_visibility="collapsed")
         with col6:
             total = item["quantity"] * item["unit_price"]
             st.write(f"{total:.2f}")
