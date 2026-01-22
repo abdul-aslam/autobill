@@ -117,11 +117,14 @@ try:
         except UnicodeDecodeError:
             items_df = pd.read_csv(items_lookup_file, encoding='latin-1')
         
+        # Ensure unit_price is numeric
+        items_df['unit_price'] = pd.to_numeric(items_df['unit_price'], errors='coerce')
+        
         items_list = items_df['item_name'].dropna().tolist()
         companies_list = sorted([x for x in items_df['company'].unique().tolist() if pd.notna(x)])
         product_categories_list = sorted([x for x in items_df['product_category'].unique().tolist() if pd.notna(x)])
-        # Create dicts for quick lookup - convert unit_price to float
-        price_lookup = dict(zip(items_df['item_name'].dropna(), pd.to_numeric(items_df['unit_price'], errors='coerce')))
+        # Create dicts for quick lookup - ensure values are floats
+        price_lookup = dict(zip(items_df['item_name'].dropna(), items_df['unit_price'].astype(float)))
         company_product_lookup = items_df.groupby('company')['product_category'].apply(lambda x: sorted([y for y in x.unique().tolist() if pd.notna(y)])).to_dict()
         company_category_items_lookup = items_df.groupby(['company', 'product_category'])['item_name'].apply(list).to_dict()
     else:
@@ -212,9 +215,10 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
             )
             st.session_state.line_items[idx]["description"] = selected_item
             
-            # Auto-fill unit price if item is in lookup
-            if selected_item in price_lookup:
-                st.session_state.line_items[idx]["unit_price"] = float(price_lookup[selected_item])
+            # Auto-fill unit price if item is in lookup and not blank
+            if selected_item and selected_item in price_lookup:
+                price_value = price_lookup[selected_item]
+                st.session_state.line_items[idx]["unit_price"] = float(price_value) if pd.notna(price_value) else 0.0
         
         with col4:
             st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, key=f"qty_{idx}", label_visibility="collapsed")
