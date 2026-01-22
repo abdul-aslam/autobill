@@ -157,56 +157,62 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
     if "line_items" not in st.session_state:
         st.session_state.line_items = []
     
-    col1, col2, col3, col4, col5, col6 = st.columns([1.2, 1.2, 1.5, 1, 1, 1])
-    with col1:
-        st.write("**Company**")
-    with col2:
-        st.write("**Product Category**")
-    with col3:
-        st.write("**Item Description**")
-    with col4:
-        st.write("**Quantity**")
-    with col5:
-        st.write("**Unit Price**")
-    with col6:
-        st.write("**Total**")
+    # Check if on mobile (narrow screen)
+    is_mobile = True  # Streamlit doesn't expose viewport width, so we default to responsive design
+    
+    if not is_mobile:
+        # Desktop view with columns
+        col1, col2, col3, col4, col5, col6 = st.columns([1.2, 1.2, 1.5, 1, 1, 1])
+        with col1:
+            st.write("**Company**")
+        with col2:
+            st.write("**Product Category**")
+        with col3:
+            st.write("**Item Description**")
+        with col4:
+            st.write("**Quantity**")
+        with col5:
+            st.write("**Unit Price**")
+        with col6:
+            st.write("**Total**")
     
     # Display existing items
     for idx, item in enumerate(st.session_state.line_items):
-        col1, col2, col3, col4, col5, col6 = st.columns([1.2, 1.2, 1.5, 1, 1, 1])
-        
-        with col1:
-            # Company selector
-            current_company = item.get("company", "")
-            companies_with_blank = [""] + companies_list
-            company_index = companies_with_blank.index(current_company) if current_company in companies_with_blank else 0
-            selected_company = st.selectbox(
-                f"Company {idx+1}",
-                companies_with_blank,
-                index=company_index,
-                key=f"company_select_{idx}",
-                label_visibility="collapsed"
-            )
-            st.session_state.line_items[idx]["company"] = selected_company
-        
-        with col2:
-            # Product Category selector filtered by company
-            company_categories = company_product_lookup.get(selected_company, []) if selected_company else []
-            current_category = item.get("product_category", "")
-            categories_with_blank = [""] + company_categories
-            category_index = categories_with_blank.index(current_category) if current_category in categories_with_blank else 0
+        # Use expandable sections for each item on mobile
+        with st.expander(f"📦 Item {idx+1}: {item.get('description', 'Select item')}", expanded=True):
+            col1, col2 = st.columns(2)
             
-            selected_category = st.selectbox(
-                f"Category {idx+1}",
-                categories_with_blank,
-                index=category_index,
-                key=f"category_select_{idx}",
-                label_visibility="collapsed"
-            )
-            st.session_state.line_items[idx]["product_category"] = selected_category
-        
-        with col3:
-            # Item selector filtered by company and category
+            with col1:
+                st.write("**Company**")
+                current_company = item.get("company", "")
+                companies_with_blank = [""] + companies_list
+                company_index = companies_with_blank.index(current_company) if current_company in companies_with_blank else 0
+                selected_company = st.selectbox(
+                    f"Company {idx+1}",
+                    companies_with_blank,
+                    index=company_index,
+                    key=f"company_select_{idx}",
+                    label_visibility="collapsed"
+                )
+                st.session_state.line_items[idx]["company"] = selected_company
+            
+            with col2:
+                st.write("**Product Category**")
+                company_categories = company_product_lookup.get(selected_company, []) if selected_company else []
+                current_category = item.get("product_category", "")
+                categories_with_blank = [""] + company_categories
+                category_index = categories_with_blank.index(current_category) if current_category in categories_with_blank else 0
+                
+                selected_category = st.selectbox(
+                    f"Category {idx+1}",
+                    categories_with_blank,
+                    index=category_index,
+                    key=f"category_select_{idx}",
+                    label_visibility="collapsed"
+                )
+                st.session_state.line_items[idx]["product_category"] = selected_category
+            
+            st.write("**Item Description**")
             items_by_company_category = company_category_items_lookup.get((selected_company, selected_category), []) if selected_company and selected_category else []
             current_item = item.get("description", "")
             items_with_blank = [""] + items_by_company_category
@@ -234,14 +240,18 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
                     if len(price_rows) > 0:
                         price_value = float(price_rows.iloc[0])
                         st.session_state.line_items[idx]["unit_price"] = price_value
-        
-        with col4:
-            st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, label_visibility="collapsed")
-        with col5:
-            st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=st.session_state.line_items[idx]["unit_price"], min_value=0.0, label_visibility="collapsed")
-        with col6:
-            total = item["quantity"] * item["unit_price"]
-            st.write(f"{total:.2f}")
+            
+            col3, col4 = st.columns(2)
+            
+            with col3:
+                st.write("**Quantity**")
+                st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, label_visibility="collapsed")
+            with col4:
+                st.write("**Unit Price**")
+                st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=st.session_state.line_items[idx]["unit_price"], min_value=0.0, label_visibility="collapsed")
+            
+            total = item["quantity"] * st.session_state.line_items[idx]["unit_price"]
+            st.metric("Total", f"{total:.2f}")
     
     # Add new item button
     if st.button("➕ Add Item"):
