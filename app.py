@@ -119,6 +119,8 @@ try:
         
         # Ensure unit_price is numeric
         items_df['unit_price'] = pd.to_numeric(items_df['unit_price'], errors='coerce')
+        # Strip whitespace from item names for consistent matching
+        items_df['item_name'] = items_df['item_name'].str.strip()
         
         items_list = items_df['item_name'].dropna().tolist()
         companies_list = sorted([x for x in items_df['company'].unique().tolist() if pd.notna(x)])
@@ -216,9 +218,15 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
             st.session_state.line_items[idx]["description"] = selected_item
             
             # Auto-fill unit price if item is in lookup and not blank
-            if selected_item and selected_item in price_lookup:
-                price_value = price_lookup[selected_item]
+            if selected_item and selected_item.strip() in price_lookup:
+                price_value = price_lookup[selected_item.strip()]
                 st.session_state.line_items[idx]["unit_price"] = float(price_value) if pd.notna(price_value) else 0.0
+            elif selected_item:
+                # If not found with exact match, try case-insensitive search
+                for lookup_item, price in price_lookup.items():
+                    if lookup_item.strip().lower() == selected_item.strip().lower():
+                        st.session_state.line_items[idx]["unit_price"] = float(price) if pd.notna(price) else 0.0
+                        break
         
         with col4:
             st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, key=f"qty_{idx}", label_visibility="collapsed")
