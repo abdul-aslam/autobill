@@ -1,10 +1,11 @@
 import streamlit as st
 from fpdf import FPDF
 import datetime
-
-# Save invoice details to a CSV file
 import pandas as pd
 import os
+
+# Set page config
+st.set_page_config(page_title="AutoBill Invoice Generator", layout="wide")
 
 history_file = "invoice_history.csv"
 
@@ -111,7 +112,11 @@ invoice_id = st.text_input("Invoice ID")
 items_lookup_file = "items_lookup.csv"
 try:
     if os.path.exists(items_lookup_file):
-        items_df = pd.read_csv(items_lookup_file, encoding='utf-8')
+        try:
+            items_df = pd.read_csv(items_lookup_file, encoding='utf-8')
+        except UnicodeDecodeError:
+            items_df = pd.read_csv(items_lookup_file, encoding='latin-1')
+        
         items_list = items_df['item_name'].dropna().tolist()
         companies_list = sorted([x for x in items_df['company'].unique().tolist() if pd.notna(x)])
         product_categories_list = sorted([x for x in items_df['product_category'].unique().tolist() if pd.notna(x)])
@@ -120,20 +125,21 @@ try:
         company_product_lookup = items_df.groupby('company')['product_category'].apply(lambda x: sorted([y for y in x.unique().tolist() if pd.notna(y)])).to_dict()
         company_category_items_lookup = items_df.groupby(['company', 'product_category'])['item_name'].apply(list).to_dict()
     else:
+        st.error("items_lookup.csv file not found!")
         items_list = []
         companies_list = []
         product_categories_list = []
         price_lookup = {}
         company_product_lookup = {}
         company_category_items_lookup = {}
-except UnicodeDecodeError:
+except Exception as e:
+    st.error(f"Error loading items_lookup.csv: {str(e)}")
     items_list = []
     companies_list = []
     product_categories_list = []
     price_lookup = {}
     company_product_lookup = {}
     company_category_items_lookup = {}
-    st.warning("Could not read items_lookup.csv. Please check file encoding.")
 
 # Expandable section for items and quantities
 with st.expander("📋 Add Items & Quantities", expanded=False):
