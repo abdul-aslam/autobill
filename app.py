@@ -236,9 +236,9 @@ with st.expander("📋 Add Items & Quantities", expanded=False):
                         st.session_state.line_items[idx]["unit_price"] = price_value
         
         with col4:
-            st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, key=f"qty_{idx}", label_visibility="collapsed")
+            st.session_state.line_items[idx]["quantity"] = st.number_input(f"Qty {idx+1}", value=item["quantity"], min_value=1, label_visibility="collapsed")
         with col5:
-            st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=float(st.session_state.line_items[idx].get("unit_price", 0.0)), min_value=0.0, key=f"price_{idx}", label_visibility="collapsed")
+            st.session_state.line_items[idx]["unit_price"] = st.number_input(f"Price {idx+1}", value=st.session_state.line_items[idx]["unit_price"], min_value=0.0, label_visibility="collapsed")
         with col6:
             total = item["quantity"] * item["unit_price"]
             st.write(f"{total:.2f}")
